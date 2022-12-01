@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r124/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.126.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/1.19.0/TweenMax.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/1.19.0/plugins/CSSPlugin.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/1.19.0/easing/EasePack.min.js"></script>
+    <script src="https://baronwatts.com/scripts/LegacyJSONLoader.js"></script>
+    <script src="https://threejs.org/examples/js/controls/DeviceOrientationControls.js"></script>
+    <script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://threejs.org/examples/js/effects/StereoEffect.js"></script>
+    <script src="https://threejs.org/examples/js/libs/tween.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.5/dat.gui.min.js"></script>
+    <!-- glowing effect scripts -->
+    <script src="https://threejs.org/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://threejs.org/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://threejs.org/examples/js/postprocessing/MaskPass.js"></script>
+    <script src="https://threejs.org/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://threejs.org/examples/js/shaders/CopyShader.js"></script>
+    <script src="https://threejs.org/examples/js/shaders/FXAAShader.js"></script>
+    <script src="https://threejs.org/examples/js/shaders/ConvolutionShader.js"></script>
+    <script src="https://threejs.org/examples/js/shaders/LuminosityHighPassShader.js"></script>
+    <!-- unreal bloom -->
+    <script src="https://threejs.org/examples/js/shaders/FXAAShader.js"></script>
+    <script src="https://threejs.org/examples/js/postprocessing/UnrealBloomPass.js"></script>
+    <script type="module" src="objects/Water2.js"></script>
+    <!-- VR Button -->
+    <button
+      id="VR"
+      class="button toggleVR"
+      title="Toggle VR Mode for Mobile Devices Only"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        xmlns:xlink="http://www.w3.org/1999/xlink"
+        version="1.1"
+        x="0px"
+        y="0px"
+        viewBox="0 0 62.7 52.375"
+        enable-background="new 0 0 62.7 41.9"
+        xml:space="preserve"
+      >
+        <path
+          d="M53.4,5.5h-44c-2.1,0-3.7,1.7-3.7,3.7v22.6c0,2.1,1.7,3.7,3.7,3.7h13.4c1.1,0,2.1-0.6,2.5-1.6l3-7.5c1.2-2.6,4.9-2.5,6,0.1  l2.6,7.3c0.4,1,1.4,1.7,2.5,1.7h13.9c2.1,0,3.7-1.7,3.7-3.7V9.3C57.2,7.2,55.5,5.5,53.4,5.5z M20.4,27c-3.2,0-5.7-2.6-5.7-5.7  s2.6-5.7,5.7-5.7s5.7,2.6,5.7,5.7S23.6,27,20.4,27z M42.4,27c-3.2,0-5.7-2.6-5.7-5.7s2.6-5.7,5.7-5.7s5.7,2.6,5.7,5.7  S45.6,27,42.4,27z"
+        />
+        <text
+          x="0"
+          y="56.9"
+          fill="#000000"
+          font-size="5px"
+          font-weight="bold"
+          font-family="'Helvetica Neue', Helvetica, Arial-Unicode, Arial, Sans-serif"
+        >
+          Created by Nick Bluth
+        </text>
+        <text
+          x="0"
+          y="61.9"
+          fill="#000000"
+          font-size="5px"
+          font-weight="bold"
+          font-family="'Helvetica Neue', Helvetica, Arial-Unicode, Arial, Sans-serif"
+        >
+          from the Noun Project
+        </text>
+      </svg>
+    </button>
+    <div id="info">SUPER!</div>
+    <audio
+      id="bflat"
+      src="https://raw.githubusercontent.com/baronwatts/models/master/sonic_ring_sound.mp3"
+    ></audio>
+    <script
+      async
+      src="https://unpkg.com/es-module-shims@1.3.6/dist/es-module-shims.js"
+    ></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "./build/three.module.js",
+          "three/addons/": "./jsm/"
+        }
+      }
+    </script>
+    <script type="module">
+      import { Water } from "three/addons/objects/Water2.js";
+      var water;
+      const params = {
+        color: "#000",
+        scale: 4,
+        flowX: 1,
+        flowY: 1,
+      };
+      //===================================================== full screen
+      var requestFullscreen = function (ele) {
+        if (ele.requestFullscreen) {
+          ele.requestFullscreen();
+        } else if (ele.webkitRequestFullscreen) {
+          ele.webkitRequestFullscreen();
+        } else if (ele.mozRequestFullScreen) {
+          ele.mozRequestFullScreen();
+        } else if (ele.msRequestFullscreen) {
+          ele.msRequestFullscreen();
+        } else {
+          console.log("Fullscreen API is not supported.");
+        }
+      };
+      var exitFullscreen = function (ele) {
+        if (ele.exitFullscreen) {
+          ele.exitFullscreen();
+        } else if (ele.webkitExitFullscreen) {
+          ele.webkitExitFullscreen();
+        } else if (ele.mozCancelFullScreen) {
+          ele.mozCancelFullScreen();
+        } else if (ele.msExitFullscreen) {
+          ele.msExitFullscreen();
+        } else {
+          console.log("Fullscreen API is not supported.");
+        }
+      };
+      //===================================================== add canvas
+      let renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setClearColor(0xd8e7ff, 0);
+      document.body.appendChild(renderer.domElement);
+      //===================================================== resize
+      window.addEventListener("resize", function () {
+        let width = window.innerWidth;
+        let height = window.innerHeight;
+        renderer.setSize(width, height);
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+      });
+      //===================================================== add Scene
+      let scene = new THREE.Scene();
+      //===================================================== add Camera
+      let camera = new THREE.PerspectiveCamera(
+        45,
+        window.innerWidth / window.innerHeight,
+        1,
+        10000
+      );
+      let cameraTarget = new THREE.Vector3(0, 0, 0);
+      //===================================================== add Group
+      var group = new THREE.Group();
+      scene.add(group);
+      //===================================================== add Controls
+      var controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.25;
+      controls.enableZoom = true;
+      //How far you can orbit vertically, upper and lower limits. The maximum is Pi / 2 (90deg). You wont see below the below the line of the horizon
+      controls.maxPolarAngle = Math.PI / 2.1;
+      //===================================================== add VR
+      renderer.setPixelRatio(window.devicePixelRatio); //VR
+      var effect = new THREE.StereoEffect(renderer); //VR
+      effect.setSize(window.innerWidth, window.innerHeight); //VR
+
+      var VR = false;
+
+      document.getElementById("VR").addEventListener("click", function () {
+        toggleVR();
+      });
+
+      function toggleVR() {
+        if (VR) {
+          VR = false;
+          controls = new THREE.OrbitControls(camera, renderer.domElement);
+        } else {
+          VR = true;
+          controls = new THREE.DeviceOrientationControls(camera);
+          requestFullscreen(document.documentElement);
+        }
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      }
+
+      //===================================================== add lighta
+      var light = new THREE.DirectionalLight(0xefffff, 1.25);
+      light.position.set(1, 1, 1).normalize();
+      scene.add(light);
+      var light = new THREE.DirectionalLight(0xffefef, 2.25);
+      light.position.set(-1, -1, -1).normalize();
+      scene.add(light);
+
+      //Create a point light in our scene. Makes everything gloomy
+      var light = new THREE.PointLight(0xffffff, 1, 100);
+      scene.add(light);
+      var numberrose1 = 0;
+      var myTimeout;
+
+      fetch("./vases.json")
+        .then(function (response) {
+          return response.json();
+        })
+        .then(function (data) {
+          // for (let numberrose1 = 0; numberrose1 < data.data.length; numberrose1++) {
+          //   rose1(data.data[numberrose1].name,data.data[numberrose1].positionX,data.data[numberrose1].positinY,data.data[numberrose1].positinZ,data.data[numberrose1].rotationX,data.data[numberrose1].rotationY,data.data[numberrose1].rotationZ);
+
+          // }
+          function icrenum(num) {}
+          console.log(data.data.length);
+          myTimeout = setInterval(function () {
+            roses(
+              data.data[numberrose1].name,
+              data.data[numberrose1].positionX,
+              data.data[numberrose1].positinY,
+              data.data[numberrose1].positinZ,
+              data.data[numberrose1].rotationX,
+              data.data[numberrose1].rotationY,
+              data.data[numberrose1].rotationZ,
+              data.data.length
+            );
+            icrenum(numberrose1++);
+          }, 1000);
+        })
+        .catch(function (err) {
+          console.warn("Something went wrong.", err);
+        });
+      var loader = new THREE.GLTFLoader();
+      function roses(nam, pox, poy, poz, rox, roy, roz, lngthdata) {
+        loader.load("models/" + nam + ".glb", function (gltff) {
+          //face1.glb
+          if (
+            gltff.scene.children[0] != undefined ||
+            gltff.scene.children[0] != null
+          ) {
+            gltff.scene.children[0].traverse(function (child) {
+              if (child.isMesh) {
+                if ((child.name = "base")) {
+                  child.position.x = pox;
+                  child.position.y = poy;
+                  child.position.z = poz;
+                  child.rotation.z = roz;
+                  child.rotation.x = rox;
+                  child.rotation.y = roy;
+                  scene.add(child);
+                }
+                if (numberrose1 >= lngthdata) {
+                  clearInterval(myTimeout);
+                }
+              }
+            });
+          }
+        });
+      }
+
+      sndan();
+
+      function sndan() {
+        loader.load("sndan1.glb", function (gltff) {
+          //face1.glb
+          console.log(gltff.scene);
+          gltff.scene.traverse(function (child) {
+            if (child.isMesh) {
+              child.receiveShadow = true;
+              child.castShadow = true;
+              scene.add(child);
+            }
+          });
+        });
+      }
+
+      domen();
+
+      function domen() {
+        loader.load(
+          "watersndan1.glb",
+          function (gltff) {
+            //face1.glb
+            console.log(gltff.scene);
+            gltff.scene.traverse(function (child) {
+              if (child.isMesh) {
+                child.receiveShadow = true;
+                child.castShadow = true;
+
+                //  scene.add(child);
+
+                const waterGeometry = new THREE.SphereGeometry(5, 5, 5);
+
+                water = new Water(child.geometry, {
+                  color: params.color,
+                  scale: params.scale,
+                  flowDirection: new THREE.Vector2(params.flowX, params.flowY),
+                  textureWidth: 1024,
+                  textureHeight: 1024,
+                  transprant: true,
+                  opacity: 0.5,
+                });
+
+                //water.position.y = 1;
+                //	water.rotation.x = Math.PI * - 0.5;
+                scene.add(water);
+              }
+            });
+          },
+          (xhr) => {
+            if ((xhr.loaded / xhr.total) * 100 == 100) {
+            }
+            console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
+          },
+          (error) => {
+            console.log(error);
+          }
+        );
+      }
+
+      var model;
+
+      //===================================================== Loader
+      var clock = new THREE.Clock();
+      var mixer = null;
+      var firstObject;
+
+      var size = 0.05;
+      var meshList = [];
+
+      function PlaySound() {
+        bflat.play();
+      }
+
+      //calculate distance of the main object
+      var firstBB = new THREE.Box3().setFromObject(group);
+
+      //calculate distance for all other objects
+      for (var i = 0; i < meshList.length; i++) {
+        secondBB = new THREE.Box3().setFromObject(meshList[i]);
+      }
+
+      var count = 0;
+      function hit() {
+        //recalculate distance for the main object
+        firstBB = new THREE.Box3().setFromObject(group);
+        //recalcuate distance for all the other objects
+        for (var i = 0; i < meshList.length; i++) {
+          secondBB = new THREE.Box3().setFromObject(meshList[i]);
+
+          if (firstBB.isIntersectionBox(secondBB)) {
+            PlaySound();
+            info.style.color =
+              "hsl(" + Math.floor(Math.random() * 290) + ",50%,50%)";
+            info.innerHTML =
+              Math.random() > 0.25
+                ? "Superb!"
+                : Math.random() > 0.25
+                ? "Oustanding!"
+                : "Awesome!";
+
+            TweenLite.to(info, 0.75, {
+              css: { fontSize: "50px", opacity: 1 },
+              ease: Power4.easeOut,
+              onComplete: function () {
+                TweenLite.to(info, 0.75, {
+                  css: { fontSize: "14px", opacity: 0 },
+                  ease: Power4.easeOut,
+                }); //end tween
+              }, //end onComplete
+            }); //end tween
+          } //end if
+        } //end for
+      } //end hit
+
+      //===================================================== bloom
+      var renderScene = new THREE.RenderPass(scene, camera);
+      var shaderActive = "none";
+      var gui = new dat.GUI();
+      dat.GUI.toggleHide();
+      var composer;
+
+      var parameters = {
+        x: 0,
+        y: 30,
+        z: 0,
+        bloomStrength: 1.0,
+        bloomRadius: 1.0,
+        bloomThreshold: 0.45,
+        useShaderNone: function () {
+          setupShaderNone();
+        },
+        useShaderBloom: function () {
+          setupShaderBloom();
+        },
+      };
+
+      gui.add(parameters, "useShaderNone").name("Display Original Scene");
+
+      var folderBloom = gui.addFolder("Bloom");
+      var bloomStrengthGUI = folderBloom
+        .add(parameters, "bloomStrength")
+        .min(0.0)
+        .max(2.0)
+        .step(0.01)
+        .name("Strength")
+        .listen();
+      bloomStrengthGUI.onChange(function (value) {
+        setupShaderBloom();
+      });
+      var bloomRadiusGUI = folderBloom
+        .add(parameters, "bloomRadius")
+        .min(0.0)
+        .max(5.0)
+        .step(0.01)
+        .name("Radius")
+        .listen();
+      bloomRadiusGUI.onChange(function (value) {
+        setupShaderBloom();
+      });
+      var bloomThresholdGUI = folderBloom
+        .add(parameters, "bloomThreshold")
+        .min(0)
+        .max(0.99)
+        .step(0.01)
+        .name("Threshold")
+        .listen();
+      bloomThresholdGUI.onChange(function (value) {
+        setupShaderBloom();
+      });
+      folderBloom.add(parameters, "useShaderBloom").name("Use Bloom Shader");
+      folderBloom.open();
+
+      //===================================================== functions
+
+      function setupShaderNone() {
+        shaderActive = "none";
+      }
+
+      function setupShaderBloom() {
+        composer = new THREE.EffectComposer(renderer);
+        composer.addPass(new THREE.RenderPass(scene, camera));
+
+        /*unreal bloom*/
+        var effectFXAA = new THREE.ShaderPass(THREE.FXAAShader);
+        effectFXAA.uniforms["resolution"].value.set(
+          1 / window.innerWidth,
+          1 / window.innerHeight
+        );
+
+        var copyShader = new THREE.ShaderPass(THREE.CopyShader);
+        copyShader.renderToScreen = true;
+
+        var bloomPass = new THREE.UnrealBloomPass(
+          new THREE.Vector2(window.innerWidth, window.innerHeight),
+          parameters.bloomStrength,
+          parameters.bloomRadius,
+          parameters.bloomThreshold
+        );
+
+        composer = new THREE.EffectComposer(renderer);
+        composer.setSize(window.innerWidth, window.innerHeight);
+        composer.addPass(renderScene);
+        composer.addPass(effectFXAA);
+        composer.addPass(bloomPass);
+        composer.addPass(copyShader);
+        shaderActive = "bloom";
+      }
+
+      function isShaderActive() {
+        if (shaderActive == "none") {
+          renderer.render(scene, camera);
+        } else {
+          composer.render();
+        }
+      }
+
+      //active bloom on load
+      setupShaderBloom();
+
+      //===================================================== Animate
+      var percentage = 0;
+      var prevTime = Date.now();
+
+      function animate() {
+        hit();
+        var delta = clock.getDelta();
+        if (mixer != null) mixer.update(delta);
+
+        //VR
+        if (VR) {
+          effect.render(scene, camera);
+        } else {
+          //renderer.render( scene, camera );
+          isShaderActive();
+        }
+
+        requestAnimationFrame(animate);
+        controls.update();
+      }
+      animate();
+
+      //set camera position
+      camera.position.x = 400;
+      camera.position.y = 50;
+      camera.position.z = 50;
+    </script>
+  </body>
+</html>
